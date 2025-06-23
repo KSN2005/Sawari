@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {UserDataContext} from "../context/UserContext";
+import logo from "../assets/LogoSAWARI.png";
 
 
 const UserSignup = () => {
@@ -52,20 +53,20 @@ const UserSignup = () => {
     setConfirmPassword("");
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6 md:p-8">
-      <img
-        className="w-20 mb-4 mx-auto"
-        src="https://sdmntprwestus3.oaiusercontent.com/files/00000000-7d1c-61fd-be3c-2a16c300538b/raw?se=2025-06-16T09%3A43%3A22Z&sp=r&sv=2024-08-04&sr=b&scid=93f6c23f-063b-57a5-9676-ccf78f1989b5&skoid=864daabb-d06a-46b3-a747-d35075313a83&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-06-15T22%3A35%3A33Z&ske=2025-06-16T22%3A35%3A33Z&sks=b&skv=2024-08-04&sig=4gnArVqnI2J5zlTpd4x%2BEORcQFeBPMoEXnpakswm8BU%3D"
-        alt="Sawari Logo"
-      />
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <img
+          className="w-20 mb-8 mx-auto hover:scale-105 transition-transform"
+          src={logo}
+          alt="Sawari Logo"
+        />
         <form onSubmit={submitHandler} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg font-medium mb-2">First Name</h3>
               <input
                 type="text"
-                className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="First name"
                 value={firstName}
                 onChange={(e) => {
@@ -79,7 +80,7 @@ const UserSignup = () => {
               <h3 className="text-lg font-medium mb-2">Last Name</h3>
               <input
                 type="text"
-                className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Last Name"
                 value={lastName}
                 onChange={(e) => {
@@ -94,7 +95,7 @@ const UserSignup = () => {
             <h3 className="text-lg font-medium mb-2">Enter your email</h3>
             <input
               type="email"
-              className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="email@example.com"
               value={email}
               onChange={(e) => {
@@ -108,7 +109,7 @@ const UserSignup = () => {
             <h3 className="text-lg font-medium mb-2">Create a password</h3>
             <input
               type="password"
-              className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="password"
               value={password}
               onChange={(e) => {
@@ -122,7 +123,7 @@ const UserSignup = () => {
             <h3 className="text-lg font-medium mb-2">Confirm your password</h3>
             <input
               type="password"
-              className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => {
@@ -134,7 +135,7 @@ const UserSignup = () => {
           {error && (
             <p className="text-red-500 text-sm font-medium text-center">{error}</p>
           )}
-          <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg px-4 py-3 w-full text-lg hover:opacity-90 transition-all">
+          <button className="bg-black text-white font-semibold rounded-lg px-4 py-3 w-full text-lg hover:opacity-90 transition-all">
             Sign Up
           </button>
         </form>

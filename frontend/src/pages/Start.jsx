@@ -1,11 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import backgroundImage from "../assets/start_background.png"
 
 const Start = () => {
   return (
     <div className="h-screen relative flex flex-col justify-between bg-white">
       <div className="relative h-2/3 bg-cover bg-center" style={{
-          backgroundImage: `url('https://sdmntprwestus.oaiusercontent.com/files/00000000-0fa4-6230-920c-cc88e1617420/raw?se=2025-06-13T16%3A53%3A00Z&sp=r&sv=2024-08-04&sr=b&scid=f21c6d9b-8cfc-5af6-8ee2-6081b7c48446&skoid=ec8eb293-a61a-47e0-abd0-6051cc94b050&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-06-12T23%3A57%3A30Z&ske=2025-06-13T23%3A57%3A30Z&sks=b&skv=2024-08-04&sig=feSkKf1TO9/kFVw6GcYDWt7LKL6ke2g/L0PngEdLCuE%3D')`,
+          backgroundImage: `url(${backgroundImage})`,
         }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>

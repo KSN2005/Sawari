@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { UserDataContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import logo from "../assets/LogoSAWARI.png";
 const UserLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,13 +30,16 @@ const UserLogin = () => {
       if (response.status === 200) {
         const data = response.data;
         setUser(data.user);
-        localStorage.setItem('token', data.token);
+        localStorage.setItem("token", data.token);
         navigate("/home");
       }
-    } catch (error) {
-      if (error.response && error.response.status === 401) {
-        setErrorMessage("Password is wrong. Please try again.");
-      }
+    } catch (err) {
+      // Show error if login fails (e.g., wrong password)
+      setError(
+        err.response && err.response.status === 401
+          ? "Incorrect email or password."
+          : "Login failed. Please try again."
+      );
     }
 
     setEmail("");
@@ -44,13 +47,14 @@ const UserLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6 md:p-8">
-      <img
-        className="w-20 mb-4 mx-auto"
-        src="https://sdmntprwestus3.oaiusercontent.com/files/00000000-7d1c-61fd-be3c-2a16c300538b/raw?se=2025-06-16T09%3A43%3A22Z&sp=r&sv=2024-08-04&sr=b&scid=93f6c23f-063b-57a5-9676-ccf78f1989b5&skoid=864daabb-d06a-46b3-a747-d35075313a83&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-06-15T22%3A35%3A33Z&ske=2025-06-16T22%3A35%3A33Z&sks=b&skv=2024-08-04&sig=4gnArVqnI2J5zlTpd4x%2BEORcQFeBPMoEXnpakswm8BU%3D"
-        alt="Sawari Logo"
-      />
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <img
+          className="w-20 mb-8 mx-auto hover:scale-105 transition-transform"
+          src={logo}
+          alt="Sawari Logo"
+        />
+
         {errorMessage && (
           <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
             {errorMessage}
@@ -63,7 +67,7 @@ const UserLogin = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-[#eeeeee] mb-7 rounded px-4 py-2 border w-full text-lg placeholder:text-base"
+            className="bg-gray-50 mb-7 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="email@example.com"
             required
           />
@@ -74,11 +78,11 @@ const UserLogin = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="bg-[#eeeeee] mb-7 rounded px-4 py-2 border w-full text-lg placeholder:text-base"
+            className="bg-gray-50 mb-7 rounded-lg px-4 py-2 border border-gray-200 w-full text-lg placeholder:text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="password"
             required
           />
-          <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg px-4 py-3 w-full text-lg hover:opacity-90 transition-all">
+          <button className="bg-black text-white font-semibold rounded-lg px-4 py-3 w-full text-lg hover:opacity-90 transition-all">
             Login
           </button>
 

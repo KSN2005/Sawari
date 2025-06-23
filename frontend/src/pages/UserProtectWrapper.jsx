@@ -12,11 +12,10 @@ const UserProtectWrapper = ({ children }) => {
   console.log(token);
 
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-    }
-  }, [token]);
-
+  if (!token) {
+    navigate("/login");
+    return;
+  }
   axios
     .get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
       headers: {
@@ -34,12 +33,17 @@ const UserProtectWrapper = ({ children }) => {
       localStorage.removeItem("token");
       navigate("/login");
     });
+}, [token]);
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  return <>{children}</>;
-};
+  return (
+  <>
+    {children}
+  </>
+);
+}
 
 export default UserProtectWrapper;
