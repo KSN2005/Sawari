@@ -192,13 +192,14 @@ const CaptainSignup = () => {
           <button className="bg-black text-white font-semibold rounded-lg px-4 py-3 w-full text-sm hover:opacity-90 transition-all">
             Create Captain Account
           </button>
+        </form>
           <p className="text-center text-gray-600 mt-4">
             Already have an account?{' '}
             <Link to="/captain-login" className="text-blue-600 hover:text-blue-700 font-medium">
               Login here
             </Link>
           </p>
-        </form>
+      <p className='text-[10px] mt-6 leading-tight'>This site is protected by reCAPT and the <span className='underline'>Google Privacy Policy</span> and <span className='underlinr'>Terms of Service apply</span>.</p>
       </div>
     </div>
   );
