@@ -47,18 +47,15 @@ module.exports.createRide = async ({
             throw new Error('ALL fields are required to create a ride');
         }
 
-        console.log(`Creating ride for ${user} from "${pickup}" to "${destination}" via ${vehicleType}`);
-
         const fare = await getFare(pickup, destination);
 
         const ride = await rideModel.create({
-            author: user,
+            user: user,
             pickup,
             destination,
             fare: fare[vehicleType]
         });
 
-        console.log("Ride successfully created:", ride);
 
         return ride;
     } catch (err) {
