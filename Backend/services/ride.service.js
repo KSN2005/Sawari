@@ -1,65 +1,112 @@
 const rideModel = require('../models/ride.model');
 const mapService = require('../services/maps.service');
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 
 async function getFare(pickup, destination) {
-    if (!pickup || !destination) {
-        throw new Error('Pickup and destination are required to calculate fare');
-    }
+  if (!pickup || !destination) {
+    throw new Error('Pickup and destination are required to calculate fare');
+  }
 
-    console.log(`Calculating distance and time between "${pickup}" and "${destination}"`);
+  const isLngLat = str =>
+    typeof str === 'string' &&
+    str.split(',').length === 2 &&
+    str.split(',').every(n => !isNaN(Number(n.trim())));
 
-    const distanceTime = await mapService.getDistanceTime(pickup, destination);
+  const toCoordinateString = async (location) => {
+    if (isLngLat(location)) return location;
+    const { lng, lat } = await mapService.getAddressCoordinate(location);
+    if (!lng || !lat) throw new Error(`Invalid location: ${location}`);
+    return `${lng},${lat}`;
+  };
 
-    console.log("Distance and Time from mapService:", distanceTime);
+  const originCoord = await toCoordinateString(pickup);
+  const destinationCoord = await toCoordinateString(destination);
 
-    const baseFares = {
-        auto: 30,
-        car: 50,
-        bike: 20
-    };
+  console.log(`Calculating fare from "${originCoord}" to "${destinationCoord}"`);
 
-    const perKmRates = {
-        auto: 10,
-        car: 15,
-        bike: 7
-    };
+  const distanceTime = await mapService.getDistanceTime(originCoord, destinationCoord);
+  console.log("Distance and Time:", distanceTime);
 
-    const distanceInKm = distanceTime.distance / 1000;
+  const distanceInMeters = distanceTime.distance?.value || distanceTime.distance || 0;
+  const durationInSeconds = distanceTime.duration?.value || distanceTime.duration || 0;
 
-    const fare = {
-        auto: baseFares.auto + perKmRates.auto * distanceInKm,
-        car: baseFares.car + perKmRates.car * distanceInKm,
-        bike: baseFares.bike + perKmRates.bike * distanceInKm
-    };
+  const distanceInKm = distanceInMeters / 1000;
+  const durationInMinutes = durationInSeconds / 60;
 
-    console.log("Calculated Fare:", fare);
+  // Removed 100 km limit here
 
-    return fare;
+  const baseFares = { auto: 30, car: 50, bike: 20 };
+  const perKmRates = { auto: 10, car: 15, bike: 8 };
+  const perMinuteRates = { auto: 2, car: 3, bike: 1.5 };
+
+  const fare = {
+    auto: Math.round(baseFares.auto + (distanceInKm * perKmRates.auto) + (durationInMinutes * perMinuteRates.auto)),
+    car: Math.round(baseFares.car + (distanceInKm * perKmRates.car) + (durationInMinutes * perMinuteRates.car)),
+    bike: Math.round(baseFares.bike + (distanceInKm * perKmRates.bike) + (durationInMinutes * perMinuteRates.bike))
+  };
+
+  return fare;
+}
+module.exports.getFare = getFare;
+
+
+function getOtp(num) {
+  function generateOtp(num) {
+    const max = Math.pow(10, num) - 1;
+    const otp = crypto.randomInt(0, max + 1).toString().padStart(num, '0');
+    return otp;
+  }
+
+  return generateOtp(num);
 }
 
 module.exports.createRide = async ({
-    user, pickup, destination, vehicleType
+  user, pickup, destination, vehicleType
 }) => {
-    console.log("createRide called with:", { user, pickup, destination, vehicleType });
+  if (!user || !pickup || !destination || !vehicleType) {
+    throw new Error('ALL fields are required to create a ride');
+  }
 
-    try {
-        if (!user || !pickup || !destination || !vehicleType) {
-            throw new Error('ALL fields are required to create a ride');
-        }
+  const fare = await getFare(pickup, destination);
 
-        const fare = await getFare(pickup, destination);
+  console.log(fare);
 
-        const ride = await rideModel.create({
-            user: user,
-            pickup,
-            destination,
-            fare: fare[vehicleType]
-        });
+  const ride = await rideModel.create({
+    user: user,
+    pickup,
+    destination,
+    otp: getOtp(6),
+    fare: fare[vehicleType]
+  });
 
+  await ride.populate('user');
 
-        return ride;
-    } catch (err) {
-        console.error("Error creating ride:", err.message);
-        throw err;
-    }
+  return ride;
+
 };
+
+module.exports.confirmRide = async ({
+  rideId,captain
+}) => {
+  if (!rideId) {
+    throw new Error('Ride id is required');
+  }
+
+  await rideModel.findOneAndUpdate({
+    _id: rideId
+  }, {
+    status: 'accepted',
+    captain: captain
+  });
+
+  const ride = await rideModel.findOne({
+    _id: rideId
+  }).populate('user');
+
+  if (!ride) {
+    throw new Error('Ride not found');
+  }
+
+  return ride;
+}

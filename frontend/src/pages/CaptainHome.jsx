@@ -4,14 +4,94 @@ import logo from "../assets/LogoSAWARI.png";
 import CaptainDetails from "../components/CaptainDetails";
 import RidePopUp from "../components/RidePopUp";
 import { useGSAP } from "@gsap/react";
+import axios from 'axios';
 import { gsap } from "gsap";
 import ConfirmRidePopUp from "../components/ConfirmRidePopUp";
+import { useEffect, useContext } from "react";
+import { SocketContext } from "../context/SocketContext";
+import { CaptainDataContext } from "../context/CaptainContext";
+
 
 const CaptainHome = () => {
-  const [ridePopUpPanel, setRidePopUpPanel] = useState(true);
+  const [ridePopUpPanel, setRidePopUpPanel] = useState(false);
   const [confirmRidePopUpPanel, setConfirmRidePopUpPanel] = useState(false);
+
+
   const ridePopUpPanelRef = useRef(null);
   const confirmRidePopUpPanelRef = useRef(null);
+  const [ride, setRide] = useState(null);
+
+  const { socket } = useContext(SocketContext);
+  const { captain } = useContext(CaptainDataContext);
+
+  useEffect(() => {
+    socket.emit("join", {
+      userId: captain._id,
+      userType: "captain",
+    });
+
+    const updateLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          console.log({
+            userId: captain._id,
+            location: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            },
+          });
+
+          socket.emit("update-Location-captain", {
+            userId: captain._id,
+            location: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            },
+          });
+        });
+      }
+    };
+
+    const locationInterval = setInterval(updateLocation, 10000);
+    updateLocation();
+
+    return () => clearInterval(locationInterval);
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewRide = (data) => {
+      console.log("New ride request received:", data);
+      setRide(data);
+      setRidePopUpPanel(true);
+    };
+
+    socket.on("new-Ride", handleNewRide);
+
+    return () => {
+      socket.off("new-Ride", handleNewRide);
+    };
+  }, [socket]);
+
+  async function confirmRide() {
+
+        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/confirm`, {
+
+            rideId: ride._id,
+            captainId: captain._id,
+
+
+        }, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+
+        setRidePopUpPanel(false)
+        setConfirmRidePopUpPanel(true)
+
+    }
 
   useGSAP(
     function () {
@@ -27,8 +107,9 @@ const CaptainHome = () => {
     },
     [ridePopUpPanel]
   );
- 
-  useGSAP(function () {
+
+  useGSAP(
+    function () {
       if (confirmRidePopUpPanel) {
         gsap.to(confirmRidePopUpPanelRef.current, {
           transform: "translateY(0)",
@@ -63,11 +144,25 @@ const CaptainHome = () => {
       <div className="h-2/5 p-6">
         <CaptainDetails />
       </div>
-      <div ref={ridePopUpPanelRef} className="fixed w-full z-10 bottom-0 translate-y-full   bg-white px-3 py-10 pt-12">
-        <RidePopUp setRidePopUpPanel={setRidePopUpPanel} setConfirmRidePopUpPanel={setConfirmRidePopUpPanel} />
+      <div
+        ref={ridePopUpPanelRef}
+        className="fixed w-full z-10 bottom-0 translate-y-full   bg-white px-3 py-10 pt-12"
+      >
+        <RidePopUp
+          ride={ride}
+          setRidePopUpPanel={setRidePopUpPanel}
+         setConfirmRidePopUpPanel={setConfirmRidePopUpPanel} 
+          confirmRide={confirmRide}
+        />
       </div>
-      <div ref={confirmRidePopUpPanelRef} className="fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12">
-        <ConfirmRidePopUp setConfirmRidePopUpPanel={setConfirmRidePopUpPanel} setRidePopUpPanel={setRidePopUpPanel} />
+      <div
+        ref={confirmRidePopUpPanelRef}
+        className="fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12"
+      >
+        <ConfirmRidePopUp
+          setConfirmRidePopUpPanel={setConfirmRidePopUpPanel}
+          setRidePopUpPanel={setRidePopUpPanel}
+        />
       </div>
     </div>
   );
