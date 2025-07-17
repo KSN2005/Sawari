@@ -10,12 +10,14 @@ module.exports.getCoordinates = async (req, res, next) => {
     const { address } = req.query;
 
     try {
-        const coordinates = await mapService.getAddressCoordinate(address)
-        res.status(200).json(coordinates);
+        const { lat, lng } = await mapService.getAddressCoordinate(address);
+           console.log(`✅ Geocoded: ${address} → [${lat}, ${lng}]`);
+        res.status(200).json({ coordinates: [lat, lng] });
     } catch (error) {
         res.status(404).json({ message: 'coordinates not found' });
     }
-}
+};
+
 
 module.exports.getDistanceTime = async (req, res, next) => {
     try {

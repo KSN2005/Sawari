@@ -7,6 +7,7 @@ module.exports.getAddressCoordinate = async (address) => {
 
   try {
     const response = await axios.get(url);
+      console.log("📍 ORS Geocode raw response:", response.data);
     // ORS returns features array, not status/results
     if (response.data && response.data.features && response.data.features.length > 0) {
       const location = response.data.features[0].geometry.coordinates; // [lng, lat]
