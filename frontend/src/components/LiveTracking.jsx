@@ -1,27 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Polyline,
+  Popup,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import axios from "axios";
 
-// Fix Leaflet icon issue
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+// ORS API endpoint
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
+const customIcon = new L.Icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
 });
-
-// Recenter the map when location changes
-const RecenterMap = ({ lat, lng }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (lat && lng) {
-      map.setView([lat, lng], 15);
-    }
-  }, [lat, lng, map]);
-  return null;
-};
 
 const LiveTracking = ({ pickupAddress, destinationAddress }) => {
   const [pickupCoord, setPickupCoord] = useState(null);
@@ -29,79 +26,69 @@ const LiveTracking = ({ pickupAddress, destinationAddress }) => {
   const [routeCoords, setRouteCoords] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
 
-  // Get user's current location
+  // Fetch geolocation
   useEffect(() => {
-    const successHandler = (position) => {
-      const { latitude, longitude } = position.coords;
-      setUserLocation([latitude, longitude]);
-    };
-
-    const errorHandler = (error) => {
-      console.error("Geolocation error:", error.message);
-    };
-
-    navigator.geolocation.getCurrentPosition(successHandler, errorHandler);
-    const watchId = navigator.geolocation.watchPosition(successHandler, errorHandler);
-    return () => navigator.geolocation.clearWatch(watchId);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation([
+          position.coords.latitude,
+          position.coords.longitude,
+        ]);
+      },
+      (err) => {
+        console.error("Geolocation error:", err.message);
+        // Optional fallback location
+        setUserLocation([28.6139, 77.2090]); // New Delhi default
+      }
+    );
   }, []);
 
-  // Geocode address using your backend
+  // Convert address to coordinates using your backend
   const geocodeAddress = async (address) => {
-    if (!address || address.length < 3) return null;
-
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/maps/get-coordinates`, {
+      const response = await axios.get(`${BASE_URL}/maps/get-coordinates`, {
         params: { address },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
       });
-
-      console.log("📍 Coordinates for", address, ":", response.data.coordinates);
-      return response.data.coordinates; // Expected [lat, lng]
+      return response.data.coordinates; // [lat, lng]
     } catch (error) {
-      console.error("Geocode error for:", address, error.message);
+      console.error("Geocoding failed for:", address, error);
       return null;
     }
   };
 
-  // Get coordinates for both addresses
+  // Fetch pickup and destination coordinates
   useEffect(() => {
     const fetchCoords = async () => {
       if (!pickupAddress || !destinationAddress) return;
+
       const pickup = await geocodeAddress(pickupAddress);
       const destination = await geocodeAddress(destinationAddress);
 
-      if (pickup) setPickupCoord(pickup);
-      if (destination) setDestinationCoord(destination);
+      setPickupCoord(pickup);
+      setDestinationCoord(destination);
     };
+
     fetchCoords();
   }, [pickupAddress, destinationAddress]);
 
   // Fetch route from ORS
   useEffect(() => {
     const fetchRoute = async () => {
-      if (
-        !pickupCoord ||
-        !destinationCoord ||
-        pickupCoord.join() === destinationCoord.join()
-      ) return;
+      if (!pickupCoord || !destinationCoord) return;
 
       try {
         const response = await axios.post(
-          'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
+          "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
           {
             coordinates: [
-              [pickupCoord[1], pickupCoord[0]], // lat,lng -> lng,lat
+              [pickupCoord[1], pickupCoord[0]],
               [destinationCoord[1], destinationCoord[0]],
             ],
           },
           {
             headers: {
               Authorization: import.meta.env.VITE_ORS_API_KEY,
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
           }
         );
@@ -110,60 +97,70 @@ const LiveTracking = ({ pickupAddress, destinationAddress }) => {
           ([lng, lat]) => [lat, lng]
         );
         setRouteCoords(coords);
-      } catch (err) {
-        console.error("Route fetch error:", err.message);
+      } catch (error) {
+        console.error("Route fetch error:", error);
       }
     };
 
     fetchRoute();
   }, [pickupCoord, destinationCoord]);
 
-  const mapCenter = pickupCoord || userLocation;
-
-  if (!mapCenter) {
-    return (
-      <div className="h-full w-full flex items-center justify-center text-gray-500">
-        Loading map...
-      </div>
-    );
-  }
+  const mapCenter = pickupCoord || userLocation || [28.6139, 77.2090];
 
   return (
-    <MapContainer
-      center={mapCenter}
-      zoom={15}
-      scrollWheelZoom={true}
-      dragging={true}
-      touchZoom={true}
-      style={{ height: '100%', width: '100%' }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution="&copy; OpenStreetMap contributors"
-      />
+    <div className="h-screen w-full">
+      <MapContainer
+        center={mapCenter}
+        zoom={13}
+        scrollWheelZoom
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
-      {pickupCoord && (
-        <Marker position={pickupCoord}>
-          <Popup>Pickup Location</Popup>
-        </Marker>
-      )}
-      {destinationCoord && (
-        <Marker position={destinationCoord}>
-          <Popup>Destination</Popup>
-        </Marker>
-      )}
-      {userLocation && (
-        <Marker position={userLocation}>
-          <Popup>Your Location</Popup>
-        </Marker>
-      )}
-      {routeCoords.length > 0 && (
-        <Polyline positions={routeCoords} color="blue" />
-      )}
+        {/* Fit bounds */}
+        <FitBoundsToMarkers
+          pickup={pickupCoord}
+          destination={destinationCoord}
+        />
 
-      <RecenterMap lat={mapCenter[0]} lng={mapCenter[1]} />
-    </MapContainer>
+        {/* Pickup Marker */}
+        {pickupCoord && (
+          <Marker position={pickupCoord} icon={customIcon}>
+            <Popup>Pickup Location</Popup>
+          </Marker>
+        )}
+
+        {/* Destination Marker */}
+        {destinationCoord && (
+          <Marker position={destinationCoord} icon={customIcon}>
+            <Popup>Drop Location</Popup>
+          </Marker>
+        )}
+
+        {/* Route Line */}
+        {routeCoords.length > 0 && (
+          <Polyline positions={routeCoords} color="blue" />
+        )}
+      </MapContainer>
+    </div>
   );
+};
+
+// Fit both markers in view
+const FitBoundsToMarkers = ({ pickup, destination }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (pickup && destination) {
+      const bounds = L.latLngBounds([pickup, destination]);
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [pickup, destination]);
+
+  return null;
 };
 
 export default LiveTracking;
