@@ -1,128 +1,115 @@
 const axios = require('axios');
 const captainModel = require('../models/captain.model');
 
-// Get coordinates (lat/lng) from address
 module.exports.getAddressCoordinate = async (address) => {
-  const apiKey = process.env.ORS_API_KEY;
-  const url = `https://api.openrouteservice.org/geocode/search?text=${encodeURIComponent(address)}&api_key=${apiKey}`;
+const apiKey = process.env.ORS_API_KEY;
+const url = https://api.openrouteservice.org/geocode/search?text=${encodeURIComponent(address)}&api_key=${apiKey};
 
-  try {
-    const response = await axios.get(url);
-    console.log("📍 ORS Geocode response:", response.data);
-
-    if (response.data && response.data.features && response.data.features.length > 0) {
-      const location = response.data.features[0].geometry.coordinates; // [lng, lat]
-      return {
-        lat: location[1],
-        lng: location[0]
-      };
-    } else {
-      throw new Error('Unable to fetch coordinates');
-    }
-  } catch (error) {
-    console.error("❌ Geocoding error:", error.response?.data || error.message);
-    throw error;
-  }
+try {
+const response = await axios.get(url);
+console.log("📍 ORS Geocode raw response:", response.data);
+// ORS returns features array, not status/results
+if (response.data && response.data.features && response.data.features.length > 0) {
+const location = response.data.features[0].geometry.coordinates; // [lng, lat]
+return {
+lat: location[1],
+lng: location[0]
 };
+} else {
+throw new Error('Unable to fetch coordinates');
+}
+} catch (error) {
+console.error(error);
+throw error;
+}
+}
 
-// Get distance and time from two coordinates
 module.exports.getDistanceTime = async (origin, destination) => {
-  const apiKey = process.env.ORS_API_KEY;
-  const url = 'https://api.openrouteservice.org/v2/directions/driving-car';
+const apiKey = process.env.ORS_API_KEY;
+const url = 'https://api.openrouteservice.org/v2/directions/driving-car';
 
-  function parseCoordinates(coordStr) {
-    const parts = coordStr.split(',').map(s => parseFloat(s.trim()));
-    if (parts.length !== 2 || parts.some(isNaN)) {
-      throw new Error(`Invalid coordinate string: ${coordStr}`);
-    }
-    return parts;
-  }
+function parseCoordinates(coordStr) {
+const parts = coordStr.split(',').map(s => parseFloat(s.trim()));
+if (parts.length !== 2 || parts.some(isNaN)) {
+throw new Error(Invalid coordinate string: ${coordStr});
+}
+return parts;
+}
 
-  const coordinates = [parseCoordinates(origin), parseCoordinates(destination)];
-  console.log("📡 ORS routing coordinates:", coordinates);
+const coordinates = [parseCoordinates(origin), parseCoordinates(destination)];
+console.log("📡 ORS request coordinates:", coordinates);
 
-  const body = { coordinates };
+const body = { coordinates };
 
-  try {
-    const response = await axios.post(url, body, {
-      headers: {
-        Authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-    });
+try {
+const response = await axios.post(url, body, {
+headers: {
+Authorization: apiKey,
+'Content-Type': 'application/json',
+},
+});
 
-    if (
-      !response.data ||
-      !response.data.routes ||
-      !response.data.routes[0] ||
-      !response.data.routes[0].summary
-    ) {
-      throw new Error("Invalid ORS API response: " + JSON.stringify(response.data));
-    }
+if (  
+  !response.data ||  
+  !response.data.routes ||  
+  !response.data.routes[0] ||  
+  !response.data.routes[0].summary  
+) {  
+  throw new Error("Invalid response from ORS API: " + JSON.stringify(response.data));  
+}  
 
-    const { distance, duration } = response.data.routes[0].summary;
-    console.log("✅ ORS route summary:", { distance, duration });
+const { distance, duration } = response.data.routes[0].summary;  
+console.log("✅ ORS response:", { distance, duration });  
 
-    return { distance, duration };
-  } catch (error) {
-    console.error("❌ ORS API error:", error.response?.data || error.message);
-    return { distance: 0, duration: 0 };
-  }
+return { distance, duration };
+
+} catch (error) {
+console.error("❌ ORS API error:", error.response?.data || error.message);
+return { distance: 0, duration: 0 };
+}
 };
 
-// Get autocomplete suggestions for location input
 module.exports.getAutoCompleteSuggestions = async (input) => {
-  if (!input || input.length < 1) {
-    throw new Error('Input query must be at least 1 character.');
-  }
+if (!input || input.length < 1) {
+throw new Error('Input query must be at least 1 character.');
+}
 
-  const apiKey = process.env.ORS_API_KEY;
-  if (!apiKey) {
-    throw new Error('ORS_API_KEY is not set in environment variables');
-  }
+const apiKey = process.env.ORS_API_KEY;
+if (!apiKey) {
+throw new Error('ORS_API_KEY is not set in environment variables');
+}
+const url = https://api.openrouteservice.org/geocode/autocomplete?text=${encodeURIComponent(input)}&api_key=${apiKey};
 
-  const url = `https://api.openrouteservice.org/geocode/autocomplete?text=${encodeURIComponent(input)}&api_key=${apiKey}`;
+try {
+const response = await axios.get(url);
+if (response.data && response.data.features && response.data.features.length > 0) {
+return response.data.features.map(feature => ({
+name: feature.properties.label,
+coordinates: feature.geometry.coordinates
+}));
+} else {
+return [];
+}
+} catch (error) {
+console.error('AutoCompleteSuggestions error:', error.response?.data || error.message || error);
+if (error.response && error.response.status === 401) {
+throw new Error('Unauthorized: Check your ORS_API_KEY');
+}
+throw error;
+}
+}
 
-  try {
-    const response = await axios.get(url);
-    console.log("🔍 ORS autocomplete response:", response.data);
+module.exports.getCaptainsTheRedius = async (lat, lng, radius) => {
 
-    if (response.data && response.data.features && response.data.features.length > 0) {
-      return response.data.features.map(feature => ({
-        name: feature.properties.label,
-        coordinates: feature.geometry.coordinates // [lng, lat]
-      }));
-    } else {
-      return [];
-    }
-  } catch (error) {
-    console.error("❌ Autocomplete error:", error.response?.data || error.message);
-    if (error.response && error.response.status === 401) {
-      throw new Error('Unauthorized: Check your ORS_API_KEY');
-    }
-    throw error;
-  }
-};
+const captains = await captainModel.find({
+location: {
+$geoWithin: {
+$centerSphere: [[lat , lng], radius / 6378] // radius in kilometers
+}
+}
+});
 
-// Get captains within a certain radius (in km) from a lat/lng
-module.exports.getCaptainsInRadius = async (lat, lng, radius) => {
-  if (!lat || !lng || !radius) {
-    throw new Error('Latitude, longitude, and radius are required');
-  }
+return captains;
 
-  try {
-    const captains = await captainModel.find({
-      location: {
-        $geoWithin: {
-          $centerSphere: [[lng, lat], radius / 6378] // Note: [lng, lat] and radius in radians
-        }
-      }
-    });
+}
 
-    console.log(`🧭 Found ${captains.length} captains within ${radius}km`);
-    return captains;
-  } catch (error) {
-    console.error("❌ Captain radius query error:", error.message);
-    throw error;
-  }
-};
