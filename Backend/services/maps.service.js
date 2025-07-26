@@ -3,7 +3,7 @@ const captainModel = require('../models/captain.model');
 
 module.exports.getAddressCoordinate = async (address) => {
 const apiKey = process.env.ORS_API_KEY;
-const url = https://api.openrouteservice.org/geocode/search?text=${encodeURIComponent(address)}&api_key=${apiKey};
+const url = `https://api.openrouteservice.org/geocode/search?text=${encodeURIComponent(address)}&api_key=${apiKey}`;
 
 try {
 const response = await axios.get(url);
@@ -78,7 +78,7 @@ const apiKey = process.env.ORS_API_KEY;
 if (!apiKey) {
 throw new Error('ORS_API_KEY is not set in environment variables');
 }
-const url = https://api.openrouteservice.org/geocode/autocomplete?text=${encodeURIComponent(input)}&api_key=${apiKey};
+const url = `https://api.openrouteservice.org/geocode/autocomplete?text=${encodeURIComponent(input)}&api_key=${apiKey}`;
 
 try {
 const response = await axios.get(url);
